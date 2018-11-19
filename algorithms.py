@@ -11,7 +11,7 @@ def getaccuracy(ytest, predictions):
 	correct = 0
 	for i in range(len(ytest)):
 		if ytest[i] == predictions[i]:
-		correct += 1
+			correct += 1
 	return (correct/float(len(ytest))) * 100.0
 
 #Taken from Assignment 3
@@ -33,7 +33,7 @@ def run_svm(train_X, train_y, test_X, test_y, kernel = 'rbf', gamma='auto', rand
 
 	pred_y = clf.predict(test_X)
 	print_conf_matrix('SVM', pd.crosstab(test_y, pred_y, margins = True))
-	print('Error for SVM: ' + geterror(test_y, pred_y))
+#	print('Error for SVM: ' + geterror(test_y, pred_y))
 	return
 
 #Naive Bayes prediction assuming features from bernoulli distribution
@@ -44,7 +44,7 @@ def run_nb(train_X, train_y, test_X, test_y):
 
 	pred_y = clf.predict(test_X)
 	print_conf_matrix('Naive Bayes', pd.crosstab(test_y, pred_y, margins = True))
-	print('Error for Naive Bayes: ' + geterror(test_y, pred_y))
+#	print('Error for Naive Bayes: ' + geterror(test_y, pred_y))
 	return
 
 #logistic regression with l1 regularization, where the regularization parameter is passed from main
@@ -56,7 +56,7 @@ def run_lr(train_X, train_y, test_X, test_y, reg_param = 1.0, solver = 'liblinea
 
 	pred_y = clf.predict(test_X)
 	print_conf_matrix('Logistic Regression', pd.crosstab(test_y, pred_y, margins = True))
-	print('Error for Logistic Regression: ' + geterror(test_y, pred_y))
+#	print('Error for Logistic Regression: ' + geterror(test_y, pred_y))
 	return
 
 def cross_validate_error(alg, X, y, kf):
