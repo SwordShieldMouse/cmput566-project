@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import scale
 
 #from imblearn.over_sampling import SMOTE
 #from sklearn.model_selection import KFold
@@ -30,9 +31,10 @@ all_data.drop('Outcome', inplace = True, axis = 1)
 
 
 # split the data into test and train sets
-test_size = 0.1 # percent of the dataset that should be set aside for test
+test_size = 0.25 # percent of the dataset that should be set aside for test
 n_splits = 10 # number of splits for cross-validation
 X_data, y_data = all_data.loc[:, all_data.columns != 'Output'], all_data['Output']
+X_data = scale(X_data) # scale the data since the features have different magnitudes
 
 train_X, test_X, train_y, test_y = train_test_split(X_data, y_data, test_size = test_size, shuffle = True)
 #print(train_X.shape, test_X.shape, train_y.shape, test_y.shape)
@@ -46,8 +48,8 @@ print("There are " + str(n_minority) + " minority samples.")
 
 
 # cross-validation for the regular train/test split
-kf = StratifiedKFold(n_splits = n_splits)
-kf.get_n_splits(train_X)
+#kf = StratifiedKFold(n_splits = n_splits)
+#kf.get_n_splits(train_X)
 
 # try oversampling the minority class
 # NOTE: Should only oversample on the training data to ensure independence between training and test sets
@@ -71,9 +73,9 @@ undersampled_kf.get_splits(undersampled_train_X)"""
 # cross-validation experiments
 
 # cross-validation parameters
-regwgts = np.array([np.Inf] + [1 / i for i in np.arange(0.2, 1.02, 0.2)])#np.arange(1, 11, 2)
+regwgts = np.arange(1, 6, 1)
 kernels = ["linear", "rbf"]
-gammas = np.arange(0.1, 1.1, 0.1)
+gammas = np.arange(0.2, 1.1, 0.2)
 lr_params = {"C":regwgts}
 svm_params = {"gamma": gammas}
 #for regwgt in regwgts:
@@ -89,20 +91,37 @@ svm_params = {"gamma": gammas}
 #print(svm_best.items())
 
 print("Starting logistic regression CV")
-lr = LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced")
-lr_cv = GridSearchCV(lr, lr_params, cv = 10)
+lr = LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced", max_iter = 1000)
+lr_cv = GridSearchCV(lr, lr_params, cv = n_splits)
 lr_cv.fit(train_X, train_y)
-print(lr_cv.get_params())
+print(lr_cv.best_params__)
+print(lr_cv.cv_results__)
+C_best = lr_cv.best_params__["C"]
 
 print("Starting SVM CV")
 svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced")
-svm_cv = GridSearchCV(svm, svm_params, cv = 10)
+svm_cv = GridSearchCV(svm, svm_params, cv = n_splits)
 svm_cv.fit(train_X, train_y)
-print(svm_cv.get_params())
+print(svm_cv.best_params__)
+print(svm_cv.cv_results__)
+gamma_best = svm_cv.best_params__["gamma"]
 
 
 # final experiments (e.g., to get standard error)
+numruns = 10
+final_algs = {"Logistic Regression": LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced", max_iter = 1000, C = C_best), "SVM": SVC(kernel = "rbf", random_state = None, class_weight = "balanced", gamma = gamma_best), "Naive Bayes": BernoulliNB(alpha = 1.0, fit_prior = True)}
+
 print("Starting final experiments")
+
+errors = {}
+
+for i in range(numruns):
+    # randomize the data set
+    train_X, test_X, train_y, test_y = train_test_split(X_data, y_data, test_size = test_size, shuffle = True)
+    for name, alg in final_algs.items():
+        alg.fit(train_X, train_y)
+        pred_y = alg.predict(test_X)
+
 algorithms.run_svm(train_X, train_y, test_X, test_y)
 
 algorithms.run_nb(train_X, train_y, test_X, test_y)
