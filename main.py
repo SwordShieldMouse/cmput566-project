@@ -9,6 +9,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
 
 #from imblearn.over_sampling import SMOTE
 #from sklearn.model_selection import KFold
@@ -70,23 +71,38 @@ undersampled_kf.get_splits(undersampled_train_X)"""
 # cross-validation experiments
 
 # cross-validation parameters
-regwgts = np.arange(1, 11, 1)
+regwgts = np.array([np.Inf] + [1 / i for i in np.arange(0.2, 1.02, 0.2)])#np.arange(1, 11, 2)
 kernels = ["linear", "rbf"]
-gammas = np.arange(0.05, 1.05, 0.05)
-lr_algs = {}
-svm_algs = {}
-for regwgt in regwgts:
-    lr_algs["Logistic Regression: regwgt = " + str(regwgt)] = LogisticRegression(penalty = 'l1', C = 1.0/regwgt, solver = "liblinear", random_state = None, class_weight = "balanced")
-for gamma in gammas:
-    svm_algs["SVM: RBG gamma = " + str(gamma)] = SVC(kernel = "rbf", gamma = gamma, random_state = None, class_weight = "balanced")
+gammas = np.arange(0.1, 1.1, 0.1)
+lr_params = {"C":regwgts}
+svm_params = {"gamma": gammas}
+#for regwgt in regwgts:
+    #lr_algs["Logistic Regression: regwgt = " + str(regwgt)] = LogisticRegression(penalty = 'l1', C = 1.0/regwgt, solver = "liblinear", random_state = None, class_weight = "balanced")
+#for gamma in gammas:
+    #svm_algs["SVM: RBG gamma = " + str(gamma)] = SVC(kernel = "rbf", gamma = gamma, random_state = None, class_weight = "balanced")
 
 # run cross-validation
-#cv_lr_scores = algorithms.cross_validate(lr_algs, train_X, train_y, kf)
-#cv_svm_scores = algorithms.cross_validate(svm_algs, train_X, train_y, kf)
+#lr_best = algorithms.cross_validate(lr_algs, train_X, train_y, kf)
+#svm_best = algorithms.cross_validate(svm_algs, train_X, train_y, kf)
+
+#print(lr_best.items())
+#print(svm_best.items())
+
+print("Starting logistic regression CV")
+lr = LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced")
+lr_cv = GridSearchCV(lr, lr_params, cv = 10)
+lr_cv.fit(train_X, train_y)
+print(lr_cv.get_params())
+
+print("Starting SVM CV")
+svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced")
+svm_cv = GridSearchCV(svm, svm_params, cv = 10)
+svm_cv.fit(train_X, train_y)
+print(svm_cv.get_params())
 
 
 # final experiments (e.g., to get standard error)
-
+print("Starting final experiments")
 algorithms.run_svm(train_X, train_y, test_X, test_y)
 
 algorithms.run_nb(train_X, train_y, test_X, test_y)

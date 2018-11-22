@@ -64,16 +64,27 @@ def run_lr(train_X, train_y, test_X, test_y, reg_param = 1.0, solver = 'liblinea
 	print('F1 score for Logistic Regression: ' + str(f1_score(test_y, pred_y)))
 	return
 
-def cross_validate(algs, X, y, kf):
+"""def cross_validate(algs, X, y, kf):
 	# assumes we have been given algs from scikit learn, so that we can call fit() and predict()
 	# assumes algs is a dictionary
-	# returns the F1 scores for all the algorithms
+	# returns the best name, algorithm pair
 	scores = {}
 	ixs = kf.split(X, y)
+	# convert to numpy representation for multidim indexing
+	X = X.values
+	y = y.values
 	for name, alg in algs.items():
 		y_pred = np.array([])
 		for train_ix, test_ix in ixs:
-			alg.fit(X[train_ix], y[train_ix])
-			np.concatenate(y_pred, alg.predict(X[test_ix]))
+			#print(X)
+			alg.fit(X[train_ix, :], y[train_ix])
+			np.concatenate(y_pred, alg.predict(X[test_ix, :]))
 		scores[name] = f1_score(y_pred)
-	return scores
+	best_score = np.Inf
+	best_name = ""
+	for name, score in scores.items():
+		print(name + " got a score of: " + str(score))
+		if best_score <= score:
+			best_score = score
+			best_name = name
+	return {name: algs[name]}"""
