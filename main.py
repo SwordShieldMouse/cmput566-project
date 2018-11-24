@@ -135,12 +135,14 @@ for i in range(numruns):
         f1[name].append(2 * precision * recall / (precision + recall))
         conf_mats[name].add(pd.crosstab(test_y, pred_y))
 
+# TODO: Should plot errors/do significance test to understand if errors are actually normally distributed
+
 # print the confusion matrices for each algorithm and calculate the f1 score
 for name, mat in conf_mats.items():
     print("Confusion matrix for " + name + ": ")
     print(mat)
     f1_std_err = np.std(f1[name]) / np.sqrt(numruns)
-    print("Avg F1 score for " + name + ": " + str(f1[name]) + "+-" + str(f1_std_err))
+    print("Avg F1 score for " + name + ": " + str(f1[name]) + "+-" + str(1.96 * f1_std_err))
 
 #algorithms.run_svm(train_X, train_y, test_X, test_y)
 
