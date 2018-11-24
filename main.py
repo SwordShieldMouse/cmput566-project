@@ -92,14 +92,14 @@ svm_params = {"gamma": gammas}
 
 print("Starting logistic regression CV")
 lr = LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced", max_iter = 1000)
-lr_cv = GridSearchCV(lr, lr_params, cv = n_splits)
+lr_cv = GridSearchCV(lr, lr_params, cv = n_splits, scoring = "f1")
 lr_cv.fit(train_X, train_y)
 print(lr_cv.best_params__)
 print(lr_cv.cv_results__)
 C_best = lr_cv.best_params__["C"]
 
 print("Starting SVM CV")
-svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced")
+svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced", scoring = "f1")
 svm_cv = GridSearchCV(svm, svm_params, cv = n_splits)
 svm_cv.fit(train_X, train_y)
 print(svm_cv.best_params__)
@@ -113,17 +113,37 @@ final_algs = {"Logistic Regression": LogisticRegression(penalty = "l1", solver =
 
 print("Starting final experiments")
 
-errors = {}
+conf_mats = {} # holds the confusion matrices for each algorithm
+f1 = {} # holds the list of macro f1 scores for each algorithm
+for name, _ in final_algs.items():
+    conf_mats[name] = pd.DataFrame([[0, 0], [0, 0]])
+    f1[name] = []
 
+# compute macro average of f1 score (i.e., f1 score for every run) so that we may calculate a confidence interval
 for i in range(numruns):
     # randomize the data set
     train_X, test_X, train_y, test_y = train_test_split(X_data, y_data, test_size = test_size, shuffle = True)
     for name, alg in final_algs.items():
         alg.fit(train_X, train_y)
         pred_y = alg.predict(test_X)
+        conf_mat= pcd.crosstab(test_y, pred_y)
+        tp = mat.iloc[1, 1]
+        fp = mat.iloc[0, 1]
+        fn = mat.iloc[1, 0]
+        precision = tp / (tp + fp)
+        recall = tp / (tp + fn)
+        f1[name].append(2 * precision * recall / (precision + recall))
+        conf_mats[name].add(pd.crosstab(test_y, pred_y))
 
-algorithms.run_svm(train_X, train_y, test_X, test_y)
+# print the confusion matrices for each algorithm and calculate the f1 score
+for name, mat in conf_mats.items():
+    print("Confusion matrix for " + name + ": ")
+    print(mat)
+    f1_std_err = np.std(f1[name]) / np.sqrt(numruns)
+    print("Avg F1 score for " + name + ": " + str(f1[name]) + "+-" + str(f1_std_err))
 
-algorithms.run_nb(train_X, train_y, test_X, test_y)
+#algorithms.run_svm(train_X, train_y, test_X, test_y)
 
-algorithms.run_lr(train_X, train_y, test_X, test_y)
+#algorithms.run_nb(train_X, train_y, test_X, test_y)
+
+#algorithms.run_lr(train_X, train_y, test_X, test_y)

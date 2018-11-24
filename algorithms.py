@@ -47,7 +47,7 @@ def run_nb(train_X, train_y, test_X, test_y):
 	clf.fit(train_X, train_y)
 
 	pred_y = clf.predict(test_X)
-	print_conf_matrix('Naive Bayes', pd.crosstab(test_y, pred_y, margins = True))
+	print_conf_matrix('Naive Bayes', pd.crosstab(test_y, pred_y, margins = True)))
 	print('F1 score for Naive Bayes: ' + str(f1_score(test_y, pred_y)))
 	return
 
