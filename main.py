@@ -6,6 +6,8 @@ import algorithms
 from sklearn.svm import SVC
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
@@ -91,7 +93,7 @@ svm_params = {"gamma": gammas}
 #print(svm_best.items())
 
 print("Starting logistic regression CV")
-lr = LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced", max_iter = 1000)
+lr = LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 10)
 lr_cv = GridSearchCV(lr, lr_params, cv = n_splits, scoring = "f1")
 lr_cv.fit(train_X, train_y)
 print(lr_cv.best_params__)
@@ -99,8 +101,8 @@ print(lr_cv.cv_results__)
 C_best = lr_cv.best_params__["C"]
 
 print("Starting SVM CV")
-svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced", scoring = "f1")
-svm_cv = GridSearchCV(svm, svm_params, cv = n_splits)
+svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced")
+svm_cv = GridSearchCV(svm, svm_params, cv = n_splits, scoring = "f1")
 svm_cv.fit(train_X, train_y)
 print(svm_cv.best_params__)
 print(svm_cv.cv_results__)
@@ -109,9 +111,20 @@ gamma_best = svm_cv.best_params__["gamma"]
 
 # final experiments (e.g., to get standard error)
 numruns = 10
-final_algs = {"Logistic Regression": LogisticRegression(penalty = "l1", solver = "liblinear", random_state = None, class_weight = "balanced", max_iter = 1000, C = C_best), "SVM": SVC(kernel = "rbf", random_state = None, class_weight = "balanced", gamma = gamma_best), "Naive Bayes": BernoulliNB(alpha = 1.0, fit_prior = True)}
+
+# try a neural network since svm can take too long to converge
+nn = MLPClassifier(hidden_layer_sizes = (16, 8), alpha = 0.0, max_iter = 10, random_state = None)
+
+final_algs = {
+    "Logistic Regression": LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 10, C = C_best),
+    "SVM": SVC(kernel = "rbf", random_state = None, class_weight = "balanced", gamma = gamma_best),
+    "Naive Bayes": BernoulliNB(alpha = 1.0, fit_prior = True),
+    "Neural Network": nn
+    }
 
 print("Starting final experiments")
+
+
 
 conf_mats = {} # holds the confusion matrices for each algorithm
 f1 = {} # holds the list of macro f1 scores for each algorithm
@@ -122,18 +135,20 @@ for name, _ in final_algs.items():
 # compute macro average of f1 score (i.e., f1 score for every run) so that we may calculate a confidence interval
 for i in range(numruns):
     # randomize the data set
+    print("run #" + str(i))
     train_X, test_X, train_y, test_y = train_test_split(X_data, y_data, test_size = test_size, shuffle = True)
     for name, alg in final_algs.items():
+        print("running " + name)
         alg.fit(train_X, train_y)
         pred_y = alg.predict(test_X)
-        conf_mat= pcd.crosstab(test_y, pred_y)
+        mat= pd.crosstab(test_y, pred_y)
         tp = mat.iloc[1, 1]
         fp = mat.iloc[0, 1]
         fn = mat.iloc[1, 0]
         precision = tp / (tp + fp)
         recall = tp / (tp + fn)
         f1[name].append(2 * precision * recall / (precision + recall))
-        conf_mats[name].add(pd.crosstab(test_y, pred_y))
+        conf_mats[name].add(mat)
 
 # TODO: Should plot errors/do significance test to understand if errors are actually normally distributed
 
