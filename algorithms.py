@@ -8,17 +8,6 @@ from sklearn.model_selection import train_test_split
 import sklearn.metrics
 from sklearn.metrics import f1_score
 
-#Taken from Assignment 3
-def getaccuracy(ytest, predictions):
-	correct = 0
-	for i in range(len(ytest)):
-		if ytest[i] == predictions[i]:
-			correct += 1
-	return (correct/float(len(ytest))) * 100.0
-
-#Taken from Assignment 3
-def geterror(ytest, predictions):
-	return (100.0-getaccuracy(ytest, predictions))
 
 #Prints confusion matrix for binary classification algorithm
 def print_conf_matrix(algo_name, conf_mat):
