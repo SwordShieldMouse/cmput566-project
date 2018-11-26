@@ -16,8 +16,6 @@ def print_conf_matrix(algo_name, conf_mat):
 	print(conf_mat)
 
 #SVM, where the kernel is passed from main
-#To Do: Cross validation to find best kernel
-# TODO: Add sample weights to deal with class imbalance
 def run_svm(train_X, train_y, test_X, test_y, kernel = 'rbf', gamma='auto', random_state = None):
 
 	clf = SVC(kernel = kernel, gamma = gamma, random_state = random_state, class_weight = "balanced")
@@ -29,7 +27,6 @@ def run_svm(train_X, train_y, test_X, test_y, kernel = 'rbf', gamma='auto', rand
 	return
 
 #Naive Bayes prediction assuming features from bernoulli distribution
-# TODO: Add sample weights to deal with class imbalance
 def run_nb(train_X, train_y, test_X, test_y):
 
 	clf = BernoulliNB(alpha = 1.0, fit_prior = True)
@@ -41,8 +38,6 @@ def run_nb(train_X, train_y, test_X, test_y):
 	return
 
 #logistic regression with l1 regularization, where the regularization parameter is passed from main
-#To Do: Cross validation to find best parameter
-# TODO: Add sample weights to deal with class imbalance
 def run_lr(train_X, train_y, test_X, test_y, reg_param = 1.0, solver = 'liblinear', random_state = None):
 
 	clf = LogisticRegression(penalty = 'l1', C = 1.0/reg_param, solver = solver, random_state = random_state, class_weight = "balanced")
