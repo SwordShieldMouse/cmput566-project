@@ -3,7 +3,7 @@ import pandas as pd
 import scipy as sp
 import matplotlib.pyplot as plt
 
-import algorithms
+#import algorithms
 
 from sklearn.svm import SVC
 from sklearn.naive_bayes import BernoulliNB
@@ -36,7 +36,7 @@ all_data.drop('Outcome', inplace = True, axis = 1)
 
 # split the data into test and train sets
 test_size = 0.25 # percent of the dataset that should be set aside for test
-n_splits = 10 # number of splits for cross-validation
+n_splits = 5 # number of splits for cross-validation
 X_data, y_data = all_data.loc[:, all_data.columns != 'Output'], all_data['Output']
 X_data = scale(X_data) # scale the data since the features have different magnitudes
 
