@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import scipy as sp
+import matplotlib.pyplot as plt
 
 import algorithms
 
@@ -80,17 +82,7 @@ kernels = ["linear", "rbf"]
 gammas = np.arange(0.2, 1.1, 0.2)
 lr_params = {"C":regwgts}
 svm_params = {"gamma": gammas}
-#for regwgt in regwgts:
-    #lr_algs["Logistic Regression: regwgt = " + str(regwgt)] = LogisticRegression(penalty = 'l1', C = 1.0/regwgt, solver = "liblinear", random_state = None, class_weight = "balanced")
-#for gamma in gammas:
-    #svm_algs["SVM: RBG gamma = " + str(gamma)] = SVC(kernel = "rbf", gamma = gamma, random_state = None, class_weight = "balanced")
 
-# run cross-validation
-#lr_best = algorithms.cross_validate(lr_algs, train_X, train_y, kf)
-#svm_best = algorithms.cross_validate(svm_algs, train_X, train_y, kf)
-
-#print(lr_best.items())
-#print(svm_best.items())
 
 print("Starting logistic regression CV")
 lr = LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 10)
@@ -128,7 +120,7 @@ print("Starting final experiments")
 
 conf_mats = {} # holds the confusion matrices for each algorithm
 f1 = {} # holds the list of macro f1 scores for each algorithm
-for name, _ in final_algs.items():
+for name in final_algs.keys():
     conf_mats[name] = pd.DataFrame([[0, 0], [0, 0]])
     f1[name] = []
 
@@ -150,17 +142,33 @@ for i in range(numruns):
         f1[name].append(2 * precision * recall / (precision + recall))
         conf_mats[name].add(mat)
 
-# TODO: Should plot errors/do significance test to understand if errors are actually normally distributed
+# plot errors/do significance test to understand if errors are actually normally distributed
+# also find confidence intervals
+for name in final_algs.keys():
+    # plot the histogram
+    plt.hist(sorted(f1[name]))
+    plt.title("F1 error for " + name)
+    plt.show()
 
-# print the confusion matrices for each algorithm and calculate the f1 score
+    # show a QQ plot
+    sp.stats.probplot(scale(f1[name]), plot = plt)
+    plt.title("QQ plot for F1 error of " + name)
+    plt.show()
+
+    # do the scipy normality test
+    statistic, p_value = sp.stats.normaltest(f1[name])
+    print("Normal statistic for " + name + " = " + str(statistic) + ", p = " + str(p_value))
+
+    # assuming scores are normally distributed, calculate 95% confidence interval
+    mu = np.mean(f1[name])
+    sigma = np.std(f1[name])
+    left = mu - 1.96 * sigma / sqrt(numruns)
+    right = mu + 1.96 * sigma / sqrt(numruns)
+    print("95% confidence interval for " + name + ": " + "(" + str(left) + ", " + str(right) + ")")
+
+# print the confusion matrices for each algorithm and calculate the avg f1 score
 for name, mat in conf_mats.items():
     print("Confusion matrix for " + name + ": ")
     print(mat)
     f1_std_err = np.std(f1[name]) / np.sqrt(numruns)
     print("Avg F1 score for " + name + ": " + str(f1[name]) + "+-" + str(1.96 * f1_std_err))
-
-#algorithms.run_svm(train_X, train_y, test_X, test_y)
-
-#algorithms.run_nb(train_X, train_y, test_X, test_y)
-
-#algorithms.run_lr(train_X, train_y, test_X, test_y)
