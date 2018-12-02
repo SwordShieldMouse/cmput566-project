@@ -83,26 +83,26 @@ gammas = np.arange(0.2, 1.1, 0.2)
 lr_params = {"C":regwgts}
 svm_params = {"gamma": gammas}
 
-
-print("Starting logistic regression CV")
+# Already ran CV, so commented it out
+"""print("Starting logistic regression CV")
 lr = LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 90)
 lr_cv = GridSearchCV(lr, lr_params, cv = n_splits, scoring = "f1")
 lr_cv.fit(train_X, train_y)
 print(lr_cv.best_params__)
-print(lr_cv.cv_results__)
-C_best = lr_cv.best_params__["C"]
+print(lr_cv.cv_results__)"""
+C_best = 2#lr_cv.best_params__["C"]
 
-print("Starting SVM CV")
+"""print("Starting SVM CV")
 svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced", max_iter = 1000)
 svm_cv = GridSearchCV(svm, svm_params, cv = n_splits, scoring = "f1")
 svm_cv.fit(train_X, train_y)
 print(svm_cv.best_params__)
-print(svm_cv.cv_results__)
-gamma_best = svm_cv.best_params__["gamma"]
+print(svm_cv.cv_results__)"""
+gamma_best = 1.0#svm_cv.best_params__["gamma"]
 
 
 # final experiments (e.g., to get standard error)
-numruns = 30
+numruns = 8
 
 # try a neural network since svm can take too long to converge
 nn = MLPClassifier(hidden_layer_sizes = (16, 8), alpha = 0.0, max_iter = 10, random_state = None)
@@ -110,8 +110,8 @@ nn = MLPClassifier(hidden_layer_sizes = (16, 8), alpha = 0.0, max_iter = 10, ran
 final_algs = {
     "Logistic Regression": LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 90, C = C_best),
     "SVM": SVC(kernel = "rbf", random_state = None, class_weight = "balanced", gamma = gamma_best, max_iter = 1000),
-    "Naive Bayes": BernoulliNB(alpha = 1.0, fit_prior = True),
-    "Neural Network": nn
+    "Naive Bayes": BernoulliNB(alpha = 1.0, fit_prior = True)
+    #"Neural Network": nn
     }
 
 print("Starting final experiments")
@@ -133,18 +133,21 @@ for i in range(numruns):
         print("running " + name)
         alg.fit(train_X, train_y)
         pred_y = alg.predict(test_X)
-        mat= pd.crosstab(test_y, pred_y)
+        mat = pd.crosstab(test_y, pred_y)
+        #print(mat)
         tp = mat.iloc[1, 1]
         fp = mat.iloc[0, 1]
         fn = mat.iloc[1, 0]
         precision = tp / (tp + fp)
+        print(precision)
         if precision < 0.00001:
         	precision = 0.00001
         recall = tp / (tp + fn)
         if recall < 0.00001:
         	recall = 0.00001
         f1[name].append(2 * precision * recall / (precision + recall))
-        conf_mats[name].add(mat)
+        conf_mats[name] = conf_mats[name].add(mat)
+        print(conf_mats[name])
 
 # plot errors/do significance test to understand if errors are actually normally distributed
 # also find confidence intervals
@@ -166,8 +169,8 @@ for name in final_algs.keys():
     # assuming scores are normally distributed, calculate 95% confidence interval
     mu = np.mean(f1[name])
     sigma = np.std(f1[name])
-    left = mu - 1.96 * sigma / sqrt(numruns)
-    right = mu + 1.96 * sigma / sqrt(numruns)
+    left = mu - 1.96 * sigma / np.sqrt(numruns)
+    right = mu + 1.96 * sigma / np.sqrt(numruns)
     print("95% confidence interval for " + name + ": " + "(" + str(left) + ", " + str(right) + ")")
 
 # print the confusion matrices for each algorithm and calculate the avg f1 score
