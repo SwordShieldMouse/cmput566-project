@@ -85,7 +85,7 @@ svm_params = {"gamma": gammas}
 
 
 print("Starting logistic regression CV")
-lr = LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 10)
+lr = LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 90)
 lr_cv = GridSearchCV(lr, lr_params, cv = n_splits, scoring = "f1")
 lr_cv.fit(train_X, train_y)
 print(lr_cv.best_params__)
@@ -93,7 +93,7 @@ print(lr_cv.cv_results__)
 C_best = lr_cv.best_params__["C"]
 
 print("Starting SVM CV")
-svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced")
+svm = SVC(kernel = "rbf", random_state = None, class_weight = "balanced", max_iter = 1000)
 svm_cv = GridSearchCV(svm, svm_params, cv = n_splits, scoring = "f1")
 svm_cv.fit(train_X, train_y)
 print(svm_cv.best_params__)
@@ -102,14 +102,14 @@ gamma_best = svm_cv.best_params__["gamma"]
 
 
 # final experiments (e.g., to get standard error)
-numruns = 10
+numruns = 30
 
 # try a neural network since svm can take too long to converge
 nn = MLPClassifier(hidden_layer_sizes = (16, 8), alpha = 0.0, max_iter = 10, random_state = None)
 
 final_algs = {
-    "Logistic Regression": LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 10, C = C_best),
-    "SVM": SVC(kernel = "rbf", random_state = None, class_weight = "balanced", gamma = gamma_best),
+    "Logistic Regression": LogisticRegression(penalty = "l1", solver = "saga", random_state = None, class_weight = "balanced", max_iter = 90, C = C_best),
+    "SVM": SVC(kernel = "rbf", random_state = None, class_weight = "balanced", gamma = gamma_best, max_iter = 1000),
     "Naive Bayes": BernoulliNB(alpha = 1.0, fit_prior = True),
     "Neural Network": nn
     }
@@ -138,7 +138,11 @@ for i in range(numruns):
         fp = mat.iloc[0, 1]
         fn = mat.iloc[1, 0]
         precision = tp / (tp + fp)
+        if precision < 0.00001:
+        	precision = 0.00001
         recall = tp / (tp + fn)
+        if recall < 0.00001:
+        	recall = 0.00001
         f1[name].append(2 * precision * recall / (precision + recall))
         conf_mats[name].add(mat)
 
@@ -171,4 +175,4 @@ for name, mat in conf_mats.items():
     print("Confusion matrix for " + name + ": ")
     print(mat)
     f1_std_err = np.std(f1[name]) / np.sqrt(numruns)
-    print("Avg F1 score for " + name + ": " + str(f1[name]) + "+-" + str(1.96 * f1_std_err))
+    print("Avg F1 score for " + name + ": " + str(np.mean(f1[name])) + "+-" + str(1.96 * f1_std_err))
